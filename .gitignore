@@ -9,3 +9,7 @@ mochawesome-report
 .vscode
 *.DS_Store
 package-lock.json
+coverage
+.nyc_output
+.vscode/*
+./debugstart.ts

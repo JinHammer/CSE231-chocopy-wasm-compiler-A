@@ -264,10 +264,14 @@ export function builtin_float(args: number[], builtin: Function, libmem: WebAsse
   return save_float(rslt, libmem);
 }
 
-export function PyValue(typ: Type, result: bigint): Value<Annotation> {
+export function PyValue(typ: Type, result: bigint|number): Value<Annotation> {
   switch (typ.tag) {
     case "number":
-      return PyInt(result);
+      if(typeof(result) === "bigint")
+        return PyInt(result);
+      else
+        return PyFloat(result);
+
     case "float":
       return PyFloat(result);
     case "bool":
@@ -283,7 +287,7 @@ export function PyInt(n: bigint): Value<Annotation> {
   return { tag: "num", value: n };
 }
 
-export function PyFloat(n: bigint): Value<Annotation> {
+export function PyFloat(n: number|bigint): Value<Annotation> {
   return { tag: "float", value: Number(n)};
 } 
 

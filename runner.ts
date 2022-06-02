@@ -8,7 +8,7 @@ import { compile, GlobalEnv } from './compiler';
 import {parse} from './parser';
 import {emptyLocalTypeEnv, GlobalTypeEnv, tc, tcStmt} from  './type-check';
 import { Annotation, FunDef, Program, Type, Value } from './ast';
-import { PyValue, NONE, BOOL, NUM, CLASS, makeWasmFunType } from "./utils";
+import { PyValue, NONE, BOOL, NUM, FLOAT,CLASS, makeWasmFunType } from "./utils";
 import { closureName, lowerProgram } from './lower';
 import { monomorphizeProgram } from './monomorphizer';
 import { optimizeProgram } from './optimization';
@@ -91,7 +91,7 @@ export async function run(source : string, config: Config) : Promise<[Value<Anno
   const tmprogram = monomorphizeProgram(tprogram);
   const globalEnv = augmentEnv(config.env, tmprogram);
   const irprogram = lowerProgram(tmprogram, globalEnv);
-  const optIr = optimizeProgram(irprogram);
+  // const optIr = optimizeProgram(irprogram);
   const progTyp = tmprogram.a.type;
   var returnType = "";
   var returnExpr = "";
@@ -100,11 +100,11 @@ export async function run(source : string, config: Config) : Promise<[Value<Anno
   // console.log("LASTEXPR", lastExpr);
   if(progTyp !== NONE) {
     returnType = "(result i32)";
-    returnExpr = "(local.get $$last)"
+    returnExpr = "(local.get $$last)";
   } 
   let globalsBefore = config.env.globals;
   // const compiled = compiler.compile(tprogram, config.env);
-  const compiled = compile(optIr, globalEnv);
+  const compiled = compile(irprogram, globalEnv);
 
   const vtable = `(table ${globalEnv.vtableMethods.length} funcref)
     (elem (i32.const 0) ${globalEnv.vtableMethods.map(method => `$${method[0]}`).join(" ")})`;
@@ -140,6 +140,8 @@ export async function run(source : string, config: Config) : Promise<[Value<Anno
     (func $print_float (import "imports" "print_float") (param i32) (result i32))
     (func $print_bool (import "imports" "print_bool") (param i32) (result i32))
     (func $print_none (import "imports" "print_none") (param i32) (result i32))
+    (func $print_newline (import "imports" "print_newline") (param i32) (result i32))
+    (func $print_ellipsis (import "imports" "print_ellipsis") (param i32) (result i32))
     ${builtins_wasm}
     (func $destructure_check (import "imports" "destructure_check") (param i32) (result i32))
     (func $alloc (import "libmemory" "alloc") (param i32) (result i32))
@@ -180,6 +182,8 @@ export async function run(source : string, config: Config) : Promise<[Value<Anno
       ${returnExpr}
     )
   )`;
+  // console.log(wasmSource);
+  // throw new Error(`${wasmSource}`);
   const [result, instance] = await runWat(wasmSource, importObject);
 
   return [PyValue(progTyp, result), compiled.newEnv, tenv, compiled.functions, instance];

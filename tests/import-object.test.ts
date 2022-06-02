@@ -4,16 +4,20 @@ import { bigMath, floatMath } from "../utils";
 import { importObjectErrors } from "../errors";
 import { generateImportMap } from "../builtins";
 
-enum Type { Num, Float, Bool, None }
+enum Type { Num, Float, Bool, Ellipsis,None }
 
 function stringify(typ: Type, arg: any, loader: WebAssembly.ExportValue): string {
   switch (typ) {
     case Type.Num:
       return load_bignum(arg, loader).toString();
+    case Type.Float:
+      return (arg as number).toString();
     case Type.Bool:
       return (arg as boolean) ? "True" : "False";
     case Type.None:
       return "None";
+    case Type.Ellipsis:
+      return "Ellipsis";
   }
 }
 
@@ -54,9 +58,11 @@ export const importObject : any = {
     //  console.
     //assert_not_none: (arg: any) => assert_not_none(arg),
     print_num: (arg: number) => print(Type.Num, arg, importObject.libmemory.load),
-    print_float: (arg: number) => print(Type.Float, arg, importObject.libmemory.load_float),
     print_bool: (arg: number) => print(Type.Bool, arg, null),
     print_none: (arg: number) => print(Type.None, arg, null),
+    print_newline: (arg: number) => print(undefined, arg, null),
+    print_ellipsis: (arg: number) => print(Type.Ellipsis, arg, null),
+    print_float: (arg: number) => print(Type.Float, arg,importObject.libmemory.load ),
     destructure_check: (hashNext: boolean) => des_check(hashNext),
     // abs:  (arg: number) => builtin_bignum([arg], bigMath.abs, importObject.libmemory),
     // min: (arg1: number, arg2: number) => builtin_bignum([arg1, arg2], bigMath.min, importObject.libmemory),

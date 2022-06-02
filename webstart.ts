@@ -1,7 +1,8 @@
 import {BasicREPL} from './repl';
 import { Type, Value, Annotation, Class } from './ast';
 import { defaultTypeEnv, TypeCheckError } from './type-check';
-import { NUM, FLOAT, BOOL, NONE, load_bignum, load_float, builtin_bignum, binop_bignum, binop_comp_bignum, builtin_float, binop_float, binop_comp_float, bigMath, floatMath, des_check, bignum_to_i32 } from './utils';
+import { NUM, FLOAT, BOOL, NONE, load_bignum, load_float,ELLIPSIS,  builtin_bignum, binop_bignum, binop_comp_bignum, builtin_float, binop_float, binop_comp_float, bigMath, floatMath, des_check, bignum_to_i32 } from './utils';
+
 import { importObjectErrors } from './errors';
 import { generateImportMap } from './builtins';
 
@@ -27,6 +28,8 @@ function stringify(typ: Type, arg: any, loader: WebAssembly.ExportValue) : strin
       return (arg as boolean) ? "True" : "False";
     case "none":
       return "None";
+    case "...":
+      return "Ellipsis";
     case "class":
       return typ.name;
   }
@@ -73,13 +76,39 @@ export function print_class(memory: WebAssembly.Memory, repl: BasicREPL, pointer
   return display;
 }
 
-function print(typ: Type, arg : number, loader: WebAssembly.ExportValue) : any {
-  console.log("Logging from WASM: ", arg);
-  const elt = document.createElement("pre");
-  document.getElementById("output").appendChild(elt);
-  elt.innerText = stringify(typ, arg, loader);
-  return arg;
-}
+// function print(typ: Type, arg : number, loader: WebAssembly.ExportValue) : any {
+//   console.log("Logging from WASM: ", arg);
+//   const elt = document.createElement("pre");
+//   document.getElementById("output").appendChild(elt);
+//   elt.innerText = stringify(typ, arg, loader);
+//   return arg;
+// }
+
+var print = (function(){
+  var res = ""
+
+  return function(typ?: Type, arg? : number, loader?: WebAssembly.ExportValue){
+    if(typ!==undefined){
+      console.log("Logging from WASM: ", arg);
+      res += stringify(typ, arg, loader) + " ";
+      console.log(typ)
+    } else{
+      console.log("New Line")
+      const elt = document.createElement("pre");
+      document.getElementById("output").appendChild(elt);
+      if (res.length>0){
+        res = res.substring(0, res.length-1)
+      }
+      elt.innerText = res+"\n";
+      res = ""
+    }
+    return 0
+    
+  }
+
+  }());
+
+
 
 function assert_not_none(arg: any): any {
   if (arg === 0)
@@ -238,9 +267,12 @@ function webStart() {
       imports: {
         assert_not_none: (arg: any) => assert_not_none(arg),
         print_num: (arg: number) => print(NUM, arg, loader),
-        print_float: (arg: number) => print(FLOAT, arg, loader_float),
-        print_bool: (arg: number) => print(BOOL, arg, null),
-        print_none: (arg: number) => print(NONE, arg, null),
+        print_bool: (arg: number) => print(BOOL, arg),
+        print_none: (arg: number) => print(NONE, arg),
+        print_newline: (arg: number) => print(undefined, arg),
+        print_ellipsis: (arg: number) => print(ELLIPSIS, arg),
+        print_float: (arg: number) => print(FLOAT, arg),
+
         destructure_check: (hashNext: boolean) => des_check(hashNext),
         $add: (arg1: number, arg2: number) => binop_bignum([arg1, arg2], bigMath.add, memoryModule.instance.exports),
         $sub: (arg1: number, arg2: number) => binop_bignum([arg1, arg2], bigMath.sub, memoryModule.instance.exports),
