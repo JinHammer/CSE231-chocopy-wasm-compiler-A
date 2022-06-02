@@ -22,12 +22,19 @@ function stringify(typ: Type, arg: any, loader: WebAssembly.ExportValue): string
 }
 
 function print(typ: Type, arg: any, loader: WebAssembly.ExportValue): any {
-  importObject.output += stringify(typ, arg, loader);
-  importObject.output += "\n";
-  if(typ === Type.Num)
-    return Number(load_bignum(arg, loader));
-  else if(typ === Type.Float)
-    return Number(load_float(arg, loader));
+  if (typ !== undefined) {
+    importObject.output += stringify(typ, arg, loader) + " ";
+  } else {
+    if (importObject.output.length > 0) {
+      importObject.output = importObject.output.substring(
+        0,
+        importObject.output.length - 1
+      );
+    }
+    importObject.output += "\n";
+  }
+  if (typ === Type.Num) return Number(load_bignum(arg, loader));
+  else if (typ === Type.Float) return Number(load_float(arg, loader));
   return arg;
 }
 
