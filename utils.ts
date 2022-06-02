@@ -216,8 +216,10 @@ export function binop_float(args: number[], builtin: Function, libmem: WebAssemb
   var rslt : number = 0;
   const load = libmem.load_float;
   
-  if(args.length === 2)
+  if(args.length === 2){
     rslt = builtin(load_float(args[0], load), load_float(args[1], load));
+    console.log(`${load_float(args[0], load)}, ${load_float(args[1], load)} == ${rslt}`)
+  }
   else
     throw new Error("Runtime Error: too many arguments for builtin functions");
   return save_float(rslt, libmem);
@@ -236,7 +238,7 @@ export function binop_comp_float(args: number[], builtin: Function, libmem: WebA
 
 export function save_float(float: number, libmem: WebAssembly.Exports): number {
   const alloc = libmem.alloc;
-  const store = libmem.store;
+  const store = libmem.store_float;
   const addr = alloc_float(1, alloc);
   store_float(addr, float, store);
   return addr;

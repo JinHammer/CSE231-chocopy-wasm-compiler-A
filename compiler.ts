@@ -167,34 +167,40 @@ function codeGenExpr(expr: Expr<Annotation>, env: GlobalEnv): Array<string> {
     case "value":
       return codeGenValue(expr.value, env)
 
-    case "binop":
-      var lhsStmts = codeGenValue(expr.left, env);
-      var rhsStmts = codeGenValue(expr.right, env);
-      if (expr.left.a.type !== undefined){
-        if (expr.left.a.type.tag === "float"){
-        lhsStmts = lhsStmts.concat(`(i32.const 0)`)
-        lhsStmts = lhsStmts.concat([`(call $load_float);; load left`]);
-        rhsStmts = rhsStmts.concat(`(i32.const 0)`)
-        rhsStmts = rhsStmts.concat([`(call $load_float);; load right`]);
-        if (expr.a.type.tag === "float"){
-          var ret : string[] = [];
-          ret.push(`(i32.const 4)`);
-          ret.push(`(call $alloc)`);
-          ret.push(`(local.set $$scratch)`);
-          ret.push(`(local.get $$scratch)`);
-          ret.push(`(local.get $$scratch);; store new`);
-          ret.push(`(i32.const 0)`)
-          ret = ret.concat([...lhsStmts, ...rhsStmts, codeGenBinOp(expr.op, expr.left.a.type)]);
-          ret.push(`(call $store_float)`);
-          // ret.push(`(local.get $$scratch)`);
+    // case "binop":
+    //   var lhsStmts = codeGenValue(expr.left, env);
+    //   var rhsStmts = codeGenValue(expr.right, env);
+    //   if (expr.left.a.type !== undefined){
+    //     if (expr.left.a.type.tag === "float"){
+    //     lhsStmts = lhsStmts.concat(`(i32.const 0)`)
+    //     lhsStmts = lhsStmts.concat([`(call $load_float);; load left`]);
+    //     rhsStmts = rhsStmts.concat(`(i32.const 0)`)
+    //     rhsStmts = rhsStmts.concat([`(call $load_float);; load right`]);
+    //     if (expr.a.type.tag === "float"){
+    //       var ret : string[] = [];
+    //       ret.push(`(i32.const 4)`);
+    //       ret.push(`(call $alloc)`);
+    //       ret.push(`(local.set $$scratch)`);
+    //       ret.push(`(local.get $$scratch)`);
+    //       ret.push(`(local.get $$scratch);; store new`);
+    //       ret.push(`(i32.const 0)`)
+    //       ret = ret.concat([...lhsStmts, ...rhsStmts, codeGenBinOp(expr.op, expr.left.a.type)]);
+    //       ret.push(`(call $store_float)`);
+    //       // ret.push(`(local.get $$scratch)`);
 
-          return ret;
-        }
-      }
-      return [...lhsStmts, ...rhsStmts, codeGenBinOp(expr.op, expr.left.a.type)] // Assume that expr.left.a===expr.right.a
-      } else {
-        return [...lhsStmts, ...rhsStmts, "(call $$add)"]
-      }
+    //       return ret;
+    //     }
+    //   }
+    //   return [...lhsStmts, ...rhsStmts, codeGenBinOp(expr.op, expr.left.a.type)] // Assume that expr.left.a===expr.right.a
+    //   } else {
+    //     return [...lhsStmts, ...rhsStmts, "(call $$add)"]
+    //   }
+
+      case "binop":
+        const lhsStmts = codeGenValue(expr.left, env);
+        const rhsStmts = codeGenValue(expr.right, env);
+        return [...lhsStmts, ...rhsStmts, codeGenBinOp(expr.op, expr.left.a.type)];
+
     case "uniop":
       var exprStmts = codeGenValue(expr.expr, env);
       switch(expr.op){
@@ -487,40 +493,76 @@ function codeGenValue(val: Value<Annotation>, env: GlobalEnv): Array<string> {
   }
 }
 
-function codeGenBinOp(op : BinOp, tp:Type) : string {
+function codeGenBinOp(op : BinOp, typ: Type) : string {
   switch(op) {
     case BinOp.Plus:
-      return tp.tag !== "float" ? "(call $$add)" : "(f32.add)"
+      return typ?.tag !== "float" ? "(call $$add)" : "(call $$add_float)"
     case BinOp.Minus:
-      return tp.tag !== "float" ? "(call $$sub)" : "(f32.sub)"
+      return typ.tag !== "float" ? "(call $$sub)" : "(call $$sub_float)"
     case BinOp.Mul:
-      return tp.tag !== "float" ? "(call $$mul)" : "(f32.mul)"
-      case BinOp.IDiv:
-        return tp.tag !== "float" ? "(call $$div)" : "(f32.div)"
-    case BinOp.Div:
-        return tp.tag !== "float" ? "(call $$div)" : "(f32.div)"
+      return typ.tag !== "float" ? "(call $$mul)" : "(call $$mul_float)"
+    case BinOp.IDiv:
+      return typ.tag !== "float" ? "(call $$div)" : "(f32.div)"
     case BinOp.Mod:
       return "(call $$mod)"
+    case BinOp.Div:
+      return "(call $$div_float)"
     case BinOp.Eq:
-      return tp.tag !== "float" ? "(call $$eq)" : "(f32.eq)"
+      return typ.tag !== "float" ? "(call $$eq)" : "(call $$eq_float)"
     case BinOp.Neq:
-      return tp.tag !== "float" ? "(call $$neq)" : "(f32.ne)"
+      return typ.tag !== "float" ? "(call $$neq)" : "(call $$neq_float)"
     case BinOp.Lte:
-      return tp.tag !== "float" ? "(call $$lte)" : "(f32.le)"
+      return typ.tag !== "float" ? "(call $$lte)" : "(call $$lte_float)"
     case BinOp.Gte:
-      return tp.tag !== "float" ? "(call $$gte)" : "(f32.ge)"
+      return typ.tag !== "float" ? "(call $$gte)" : "(call $$gte_float)"
     case BinOp.Lt:
-      return tp.tag !== "float" ? "(call $$lt)" : "(f32.lt)"
+      return typ.tag !== "float" ? "(call $$lt)" : "(call $$lt_float)"
     case BinOp.Gt:
-      return tp.tag !== "float" ? "(call $$gt)" : "(f32.gt)"
+      return typ.tag !== "float" ? "(call $$gt)" : "(call $$gt_float)"
     case BinOp.Is:
-      return tp.tag !== "float" ? "(i32.eq)": "(f32.eq)"
+      return typ.tag !== "float" ? "(i32.eq)": "(f32.eq)"
     case BinOp.And:
       return "(i32.and)"
     case BinOp.Or:
       return "(i32.or)"
   }
 }
+
+
+// function codeGenBinOp(op : BinOp, tp:Type) : string {
+//   switch(op) {
+//     case BinOp.Plus:
+//       return tp.tag !== "float" ? "(call $$add)" : "(f32.add)"
+//     case BinOp.Minus:
+//       return tp.tag !== "float" ? "(call $$sub)" : "(f32.sub)"
+//     case BinOp.Mul:
+//       return tp.tag !== "float" ? "(call $$mul)" : "(f32.mul)"
+//       case BinOp.IDiv:
+//         return tp.tag !== "float" ? "(call $$div)" : "(f32.div)"
+//     case BinOp.Div:
+//         return tp.tag !== "float" ? "(call $$div)" : "(f32.div)"
+//     case BinOp.Mod:
+//       return "(call $$mod)"
+//     case BinOp.Eq:
+//       return tp.tag !== "float" ? "(call $$eq)" : "(f32.eq)"
+//     case BinOp.Neq:
+//       return tp.tag !== "float" ? "(call $$neq)" : "(f32.ne)"
+//     case BinOp.Lte:
+//       return tp.tag !== "float" ? "(call $$lte)" : "(f32.le)"
+//     case BinOp.Gte:
+//       return tp.tag !== "float" ? "(call $$gte)" : "(f32.ge)"
+//     case BinOp.Lt:
+//       return tp.tag !== "float" ? "(call $$lt)" : "(f32.lt)"
+//     case BinOp.Gt:
+//       return tp.tag !== "float" ? "(call $$gt)" : "(f32.gt)"
+//     case BinOp.Is:
+//       return tp.tag !== "float" ? "(i32.eq)": "(f32.eq)"
+//     case BinOp.And:
+//       return "(i32.and)"
+//     case BinOp.Or:
+//       return "(i32.or)"
+//   }
+// }
 
 function codeGenInit(init : VarInit<Annotation>, env : GlobalEnv) : Array<string> {
   const value = codeGenValue(init.value, env);
