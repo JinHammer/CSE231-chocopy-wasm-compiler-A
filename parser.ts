@@ -238,7 +238,13 @@ export function traverseExprHelper(c: TreeCursor, s: string, env: ParserEnv): Ex
         const callName = callExpr.name;
         var expr: Expr<Annotation>;
         // if (callName === "print" || callName === "abs" || callName === "len") 
-        if (isBuiltinNumArgs(callName, 1) || callName == "print" || callName == "len") {
+        if (callName === "print" && args.length !== 1) {
+          return {
+            tag: "builtinarb",
+            name: callName,
+            args: args
+          };
+        } else if (isBuiltinNumArgs(callName, 1) || callName == "print" || callName == "len") {
           return {
             tag: "builtin1",
             name: callName,

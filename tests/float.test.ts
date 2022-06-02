@@ -26,20 +26,20 @@ describe("float test", () => {
         x = 10
         `);
     // 6
-    assertClose("basic-float-2",
+    assertPrint("basic-float-2",
         `print(1.1)`,
-        `1.1`)
+        [`1.100000023841858`])
     // 7
-    assertClose("float-binop-1",
+    assertPrint("float-binop-1",
         `print(1.2 + 8.397)`,
-        `9.597`)
+        [`9.597000122070312`])
     // 8
-    assertClose("float-binop-2",
+    assertPrint("float-binop-2",
         `x : float = 3.5
         y : float = 8.4
         x = 5.6
         print((x - 1.4) / y)`,
-        `0.5`)
+        [`0.5`])
     // 9
     assertPrint(
         "float-binop-3",

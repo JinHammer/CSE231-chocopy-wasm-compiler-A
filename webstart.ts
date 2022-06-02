@@ -23,7 +23,7 @@ function stringify(typ: Type, arg: any, loader: WebAssembly.ExportValue) : strin
     case "number":
       return load_bignum(arg, loader).toString();
     case "float":
-      return load_float(arg, loader).toString();
+      return (arg as number).toString();
     case "bool":
       return (arg as boolean) ? "True" : "False";
     case "none":
